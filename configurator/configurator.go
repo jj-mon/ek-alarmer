@@ -35,8 +35,9 @@ func (c *Configurator) CreateStream(streamName string, topic string) error {
 		"sql": fmt.Sprintf("CREATE stream %s () WITH (FORMAT=\"JSON\", DATASOURCE=\"%s\", SHARED=\"true\")", streamName, topic),
 	}
 
-	_, err := c.client.DoPOST("/streams", data)
+	resp, err := c.client.DoPOST("/streams", data)
 	if err != nil {
+		log.Printf("error creating stream: %s", resp)
 		return err
 	}
 
@@ -75,8 +76,9 @@ func (c *Configurator) DropStream(id string) error {
 }
 
 func (c *Configurator) CreateRule(rule models.Rule) error {
-	_, err := c.client.DoPOST("/rules", rule)
+	resp, err := c.client.DoPOST("/rules", rule)
 	if err != nil {
+		log.Printf("error creating rule: %s", resp)
 		return err
 	}
 
