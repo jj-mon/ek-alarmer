@@ -34,8 +34,6 @@ func (c *Client) DoPOST(path string, data any) (string, error) {
 		return "", err
 	}
 
-	fmt.Println(string(b))
-
 	req.Body = io.NopCloser(bytes.NewBuffer(b))
 
 	resp, err := c.client.Do(req)

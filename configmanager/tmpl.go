@@ -11,7 +11,7 @@ var RuleTmpl = `SELECT
     WHEN cast({{.StreamName}}.payload.event.readings[0].value, 'float') > {{.Hi}} AND lag(value) <= {{.Hi}} THEN WARNING_HIGH
     WHEN cast({{.StreamName}}.payload.event.readings[0].value, 'float') > {{.HiHi}} AND lag(value) <= {{.HiHi}} THEN CRITICAL_HIGH
   ELSE IGNORE
-  END as alarmLevel
+  END as alarm_level
 FROM {{.StreamName}}
 WHERE
 	source_name = "{{.SourceName}}" AND

@@ -24,7 +24,7 @@ func New(c *configurator.Configurator, projectID string) *Manager {
 				"sql": map[string]any{
 					"url":    "postgres://postgres:postgres@edgex-postgres:5432/edgex_db?sslmode=disable",
 					"table":  "core_data.alarm",
-					"fields": []string{"project_id", "value", "source_name"},
+					"fields": []string{"project_id", "value", "source_name", "alarm_level"},
 				},
 			},
 		},
@@ -33,14 +33,6 @@ func New(c *configurator.Configurator, projectID string) *Manager {
 }
 
 func (m *Manager) ConfigureDevice(device models.Device) error {
-	if err := m.cfgr.DeleteAllRules(); err != nil {
-		log.Printf("failed to delete all rules: %s", err)
-	}
-
-	if err := m.cfgr.DeleteAllStreams(); err != nil {
-		log.Printf("failed to delete all streams: %s", err)
-	}
-
 	f, l, _ := strings.Cut(device.Name, ".")
 	streamName := fmt.Sprintf("%s%sStream", f, l)
 	topicName := fmt.Sprintf("+/+/+/+/+/%s/#", device.Name)
@@ -50,11 +42,14 @@ func (m *Manager) ConfigureDevice(device models.Device) error {
 		return err
 	}
 
+	log.Printf("stream %s created", streamName)
+
 	for _, source := range device.Sources {
 		if err := m.cfgr.CreateRule(m.toRule(source, streamName)); err != nil {
 			log.Printf("failed to create rule: %s", err)
 			return err
 		}
+		log.Printf("rule %s created", source.Name)
 	}
 
 	return nil

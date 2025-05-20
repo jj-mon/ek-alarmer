@@ -7,6 +7,9 @@ import (
 	"kuiper-conf/configurator"
 	"kuiper-conf/models"
 	"log"
+	"os"
+
+	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -14,7 +17,19 @@ const (
 	port = 59720
 )
 
+type Config struct {
+	Devices []models.Device
+}
+
 func main() {
+	var config models.Config
+	if len(os.Args) < 2 {
+		config = testConfig()
+	} else {
+		filePath := os.Args[1]
+		config = parseFile(filePath)
+	}
+
 	client := client.New(fmt.Sprintf("http://%s:%d", host, port))
 
 	cfgr := configurator.New(client)
@@ -27,49 +42,88 @@ func main() {
 
 	mgr := configmanager.New(cfgr, projectID)
 
-	device := models.Device{
-		Name: "modbus.device_505",
-		Sources: []models.Source{
-			{
-				Name: "R_1",
-				HiHi: "17000",
-				Hi:   "14000",
-				Lo:   "10000",
-				LoLo: "4000",
-			},
-			{
-				Name: "R_2",
-				HiHi: "17000",
-				Hi:   "14000",
-				Lo:   "10000",
-				LoLo: "4000",
-			},
-			{
-				Name: "R_3",
-				HiHi: "17000",
-				Hi:   "14000",
-				Lo:   "10000",
-				LoLo: "4000",
-			},
-			{
-				Name: "R_4",
-				HiHi: "17000",
-				Hi:   "14000",
-				Lo:   "10000",
-				LoLo: "4000",
-			},
-			{
-				Name: "R_5",
-				HiHi: "17000",
-				Hi:   "14000",
-				Lo:   "10000",
-				LoLo: "4000",
-			},
-		},
+	if err := cfgr.DeleteAllRules(); err != nil {
+		log.Printf("failed to delete all rules: %s", err)
 	}
 
-	if err := mgr.ConfigureDevice(device); err != nil {
-		log.Printf("failed to configure device: %s", err)
-		return
+	if err := cfgr.DeleteAllStreams(); err != nil {
+		log.Printf("failed to delete all streams: %s", err)
+	}
+
+	for _, device := range config.Devices {
+		if err := mgr.ConfigureDevice(device); err != nil {
+			log.Printf("failed to configure device: %s", err)
+			return
+		}
+	}
+}
+
+func parseFile(filePath string) models.Config {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		log.Fatalf("read file error: %v", err)
+	}
+
+	var config models.Config
+	if err := yaml.Unmarshal(data, &config); err != nil {
+		log.Fatalf("unmarshal error: %v", err)
+	}
+
+	for i, device := range config.Devices {
+		for j := range device.Sources {
+			config.Devices[i].Sources[j].HiHi = "17000"
+			config.Devices[i].Sources[j].Hi = "14000"
+			config.Devices[i].Sources[j].Lo = "10000"
+			config.Devices[i].Sources[j].LoLo = "4000"
+		}
+	}
+
+	return config
+}
+
+func testConfig() models.Config {
+	return models.Config{
+		Devices: []models.Device{
+			{
+				Name: "modbus.device_505",
+				Sources: []models.Source{
+					{
+						Name: "R_1",
+						HiHi: "17000",
+						Hi:   "14000",
+						Lo:   "10000",
+						LoLo: "4000",
+					},
+					{
+						Name: "R_2",
+						HiHi: "17000",
+						Hi:   "14000",
+						Lo:   "10000",
+						LoLo: "4000",
+					},
+					{
+						Name: "R_3",
+						HiHi: "17000",
+						Hi:   "14000",
+						Lo:   "10000",
+						LoLo: "4000",
+					},
+					{
+						Name: "R_4",
+						HiHi: "17000",
+						Hi:   "14000",
+						Lo:   "10000",
+						LoLo: "4000",
+					},
+					{
+						Name: "R_5",
+						HiHi: "17000",
+						Hi:   "14000",
+						Lo:   "10000",
+						LoLo: "4000",
+					},
+				},
+			},
+		},
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"kuiper-conf/client"
 	"kuiper-conf/models"
+	"log"
 )
 
 type Configurator struct {
@@ -21,13 +22,10 @@ func (c *Configurator) CreateSinkPlugin(name, url string) error {
 		"file": url,
 	}
 
-	resp, err := c.client.DoPOST("/plugins/sinks", data)
+	_, err := c.client.DoPOST("/plugins/sinks", data)
 	if err != nil {
-		fmt.Println(resp)
 		return err
 	}
-
-	fmt.Println(resp)
 
 	return nil
 }
@@ -37,13 +35,10 @@ func (c *Configurator) CreateStream(streamName string, topic string) error {
 		"sql": fmt.Sprintf("CREATE stream %s () WITH (FORMAT=\"JSON\", DATASOURCE=\"%s\", SHARED=\"true\")", streamName, topic),
 	}
 
-	resp, err := c.client.DoPOST("/streams", data)
+	_, err := c.client.DoPOST("/streams", data)
 	if err != nil {
-		fmt.Println(resp)
 		return err
 	}
-
-	fmt.Println(resp)
 
 	return nil
 }
@@ -53,7 +48,6 @@ func (c *Configurator) DeleteAllStreams() error {
 
 	resp, err := c.client.DoGET("/streams")
 	if err != nil {
-		fmt.Println(resp)
 		return err
 	}
 
@@ -65,31 +59,26 @@ func (c *Configurator) DeleteAllStreams() error {
 		if err := c.DropStream(stream); err != nil {
 			return err
 		}
+		log.Printf("stream %s dropped", stream)
 	}
 
 	return nil
 }
 
 func (c *Configurator) DropStream(id string) error {
-	resp, err := c.client.DoDELETE("/streams", id)
+	_, err := c.client.DoDELETE("/streams", id)
 	if err != nil {
-		fmt.Println(resp)
 		return err
 	}
-
-	fmt.Println(resp)
 
 	return nil
 }
 
 func (c *Configurator) CreateRule(rule models.Rule) error {
-	resp, err := c.client.DoPOST("/rules", rule)
+	_, err := c.client.DoPOST("/rules", rule)
 	if err != nil {
-		fmt.Println(resp)
 		return err
 	}
-
-	fmt.Println(resp)
 
 	return nil
 }
@@ -99,7 +88,6 @@ func (c *Configurator) DeleteAllRules() error {
 
 	resp, err := c.client.DoGET("/rules")
 	if err != nil {
-		fmt.Println(resp)
 		return err
 	}
 
@@ -111,19 +99,17 @@ func (c *Configurator) DeleteAllRules() error {
 		if err := c.DropRule(rule["id"].(string)); err != nil {
 			return err
 		}
+		log.Printf("rule %s dropped", rule["id"].(string))
 	}
 
 	return nil
 }
 
 func (c *Configurator) DropRule(id string) error {
-	resp, err := c.client.DoDELETE("/rules", id)
+	_, err := c.client.DoDELETE("/rules", id)
 	if err != nil {
-		fmt.Println(resp)
 		return err
 	}
-
-	fmt.Println(resp)
 
 	return nil
 }
