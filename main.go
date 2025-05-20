@@ -34,7 +34,7 @@ func main() {
 
 	cfgr := configurator.New(client)
 	// Создаем плагин sink для записи данных в базу SQL
-	if err := cfgr.CreateSinkPlugin("sql", "https://packages.emqx.net/kuiper-plugins/v2.1.3/alpine/sinks/sql_arm64.zip"); err != nil {
+	if err := cfgr.CreateSinkPlugin("sql", "https://packages.emqx.net/kuiper-plugins/v2.1.3/alpine/sinks/sql_amd64.zip"); err != nil {
 		log.Printf("failed to create sink plugin: %s", err)
 	}
 
