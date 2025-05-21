@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 )
 
@@ -33,6 +34,8 @@ func (c *Client) DoPOST(path string, data any) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	log.Printf("DATA SIZE: %d", len(b))
 
 	req.Body = io.NopCloser(bytes.NewBuffer(b))
 
