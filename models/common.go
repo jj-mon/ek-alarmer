@@ -15,3 +15,15 @@ type RuleParams struct {
 	Hi         string
 	HiHi       string
 }
+
+type Ruleset struct {
+	Streams map[string]string `json:"streams"`
+	Rules   map[string]string `json:"rules"`
+	Tables  map[string]string `json:"tables"`
+}
+
+type Stream struct {
+	Name  string
+	SQL   string
+	Rules []Rule
+}

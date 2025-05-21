@@ -115,3 +115,22 @@ func (c *Configurator) DropRule(id string) error {
 
 	return nil
 }
+
+func (c *Configurator) CreateRuleset(ruleset models.Ruleset) error {
+	b, err := json.Marshal(ruleset)
+	if err != nil {
+		return err
+	}
+
+	data := map[string]string{
+		"content": string(b),
+	}
+
+	resp, err := c.client.DoPOST("/ruleset/import", data)
+	if err != nil {
+		log.Printf("error creating ruleset: %s", resp)
+		return err
+	}
+
+	return nil
+}

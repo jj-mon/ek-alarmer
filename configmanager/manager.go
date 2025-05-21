@@ -32,27 +32,24 @@ func New(c *configurator.Configurator, projectID string) *Manager {
 	}
 }
 
-func (m *Manager) ConfigureDevice(device models.Device) error {
+func (m *Manager) ConfigureDevice(device models.Device) (models.Stream, error) {
+	var stream models.Stream
+
 	f, l, _ := strings.Cut(device.Name, ".")
 	streamName := fmt.Sprintf("%s%sStream", f, l)
 	topicName := fmt.Sprintf("+/+/+/+/+/%s/#", device.Name)
 
-	if err := m.cfgr.CreateStream(streamName, topicName); err != nil {
-		log.Printf("failed to create stream: %s", err)
-		return err
-	}
+	stream.Name = streamName
+	stream.SQL = fmt.Sprintf("CREATE stream %s () WITH (FORMAT=\"JSON\", DATASOURCE=\"%s\", SHARED=\"true\")", streamName, topicName)
 
-	log.Printf("stream %s created", streamName)
+	log.Printf("stream %s configured", streamName)
 
 	for _, source := range device.Sources {
-		if err := m.cfgr.CreateRule(m.toRule(source, streamName)); err != nil {
-			log.Printf("failed to create rule: %s", err)
-			return err
-		}
-		log.Printf("rule %s created", source.Name)
+		stream.Rules = append(stream.Rules, m.toRule(source, streamName))
+		log.Printf("rule %s configured", source.Name)
 	}
 
-	return nil
+	return stream, nil
 }
 
 func (m *Manager) toRule(source models.Source, streamName string) models.Rule {

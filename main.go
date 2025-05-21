@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"kuiper-conf/client"
 	"kuiper-conf/configmanager"
@@ -8,6 +9,7 @@ import (
 	"kuiper-conf/models"
 	"log"
 	"os"
+	"runtime"
 
 	"gopkg.in/yaml.v2"
 )
@@ -34,7 +36,9 @@ func main() {
 
 	cfgr := configurator.New(client)
 	// Создаем плагин sink для записи данных в базу SQL
-	if err := cfgr.CreateSinkPlugin("sql", "https://packages.emqx.net/kuiper-plugins/v2.1.3/alpine/sinks/sql_amd64.zip"); err != nil {
+	arch := runtime.GOARCH
+	pluginURL := fmt.Sprintf("https://packages.emqx.net/kuiper-plugins/v2.1.3/alpine/sinks/sql_%s.zip", arch)
+	if err := cfgr.CreateSinkPlugin("sql", pluginURL); err != nil {
 		log.Printf("failed to create sink plugin: %s", err)
 	}
 
@@ -50,11 +54,33 @@ func main() {
 		log.Printf("failed to delete all streams: %s", err)
 	}
 
+	// инициализируем рулсет перед его заполнением
+	ruleset := models.Ruleset{
+		Streams: map[string]string{},
+		Rules:   map[string]string{},
+		Tables:  map[string]string{},
+	}
 	for _, device := range config.Devices {
-		if err := mgr.ConfigureDevice(device); err != nil {
+		stream, err := mgr.ConfigureDevice(device)
+		if err != nil {
 			log.Printf("failed to configure device: %s", err)
 			return
 		}
+		ruleset.Streams[stream.Name] = stream.SQL
+		for _, rule := range stream.Rules {
+			b, err := json.Marshal(rule)
+			if err != nil {
+				log.Printf("failed to configure device: %s", err)
+				continue
+			}
+
+			ruleset.Rules[rule.ID] = string(b)
+		}
+	}
+
+	// оправляем рулсет в екупер
+	if err := cfgr.CreateRuleset(ruleset); err != nil {
+		log.Printf("failed to create ruleset: %s", err)
 	}
 }
 
