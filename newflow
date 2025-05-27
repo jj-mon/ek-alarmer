@@ -1,0 +1,11 @@
+{
+    "id": "alarmsRule",
+    "sql": "SELECT * FROM streamName INNER JOIN deviceTable ON streamName.deviceId = deviceTable.id",
+    "actions": [{
+        "sql": {
+            "url":    "postgres://postgres:postgres@edgex-postgres:5432/edgex_db?sslmode=disable",
+            "table":  "core_data.alarm",
+            "fields": ["project_id", "value", "source_name", "alarm_level"]
+        }
+    }]
+}

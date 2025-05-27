@@ -44,6 +44,21 @@ func (c *Configurator) CreateStream(streamName string, topic string) error {
 	return nil
 }
 
+func (c *Configurator) CreateLookupAlarmTable(tableName, filePath string) error {
+	// создаем таблицу
+	data := map[string]string{
+		"sql": fmt.Sprintf("CREATE table %s (id string, hihi string, hi string, lo string, lolo string) WITH (FORMAT=\"JSON\", KIND=\"lookup\", DATASOURCE=\"%s\", KEY=\"id\")", tableName, filePath),
+	}
+
+	resp, err := c.client.DoPOST("/tables", data)
+	if err != nil {
+		log.Printf("error creating table: %s", resp)
+		return err
+	}
+
+	return nil
+}
+
 func (c *Configurator) DeleteAllStreams() error {
 	var streams []string
 

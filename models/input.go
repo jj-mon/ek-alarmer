@@ -11,8 +11,4 @@ type Device struct {
 
 type Source struct {
 	Name string `yaml:"sourceName"`
-	HiHi string
-	Hi   string
-	Lo   string
-	LoLo string
 }

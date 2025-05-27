@@ -6,6 +6,8 @@ import (
 	"kuiper-conf/configurator"
 	"kuiper-conf/models"
 	"log"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"text/template"
 )
@@ -63,10 +65,6 @@ func (m *Manager) toRule(source models.Source, streamName string) models.Rule {
 		ProjectID:  m.projectID,
 		StreamName: streamName,
 		SourceName: source.Name,
-		LoLo:       source.LoLo,
-		Lo:         source.Lo,
-		Hi:         source.Hi,
-		HiHi:       source.HiHi,
 	}
 
 	var buf bytes.Buffer
@@ -80,4 +78,46 @@ func (m *Manager) toRule(source models.Source, streamName string) models.Rule {
 		SQL:     buf.String(),
 		Actions: m.actions,
 	}
+}
+
+func (m *Manager) CreateTresholdsTable(pathToJSON string) error {
+	// копируем файл в докер контейнер екупера
+	containerName := "edgex-kuiper"                                                // имя контейнера
+	fileNameWithExt := filepath.Base(pathToJSON)                                   // имя файла JSON
+	fileName := strings.TrimSuffix(fileNameWithExt, filepath.Ext(fileNameWithExt)) // имя файла JSON без расширения
+	tableName := fileName
+	destPath := fmt.Sprintf("%s/%s", "/kuiper/etc", fileNameWithExt) // путь в контейнере куда сохранять JSON файл для таблицы
+	// копируем JSON файл для поисковой таблицы граничных значений внутрь докер контейнер eKuipe
+	cmd := exec.Command("docker", "cp", pathToJSON, fmt.Sprintf("%s:%s", containerName, destPath))
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	// создаем таблицу в eKuiper на основе переданного JSON
+	if err := m.cfgr.CreateLookupAlarmTable(tableName, destPath); err != nil {
+		return err
+	}
+
+	m.CreateAlarmRule(tableName)
+
+	return nil
+}
+
+func (m *Manager) CreateAlarmRule(tableName string) error {
+	rule := models.Rule{
+		ID:  "alarmRule",
+		SQL: fmt.Sprintf("SELECT * FROM alarmsStream INNER JOIN %s ON alarmsStream.deviceId = %s.id", tableName, tableName),
+		Actions: []map[string]any{
+			{
+				"sql": map[string]any{
+					"url":    "postgres://postgres:postgres@edgex-postgres:5432/edgex_db?sslmode=disable",
+					"table":  "core_data.alarm",
+					"fields": []string{"project_id", "value", "source_name", "alarm_level"},
+				},
+			},
+		},
+	}
+
+	m.cfgr.CreateRule(rule)
+
+	return nil
 }
