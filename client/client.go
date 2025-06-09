@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 )
 
@@ -35,8 +34,6 @@ func (c *Client) DoPOST(path string, data any) (string, error) {
 		return "", err
 	}
 
-	log.Printf("DATA SIZE: %d", len(b))
-
 	req.Body = io.NopCloser(bytes.NewBuffer(b))
 
 	resp, err := c.client.Do(req)
@@ -52,6 +49,40 @@ func (c *Client) DoPOST(path string, data any) (string, error) {
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		return string(respBody), fmt.Errorf("failed do POST request: %s", resp.Status)
+	}
+
+	return string(respBody), nil
+}
+
+func (c *Client) DoPUT(path string, data any) (string, error) {
+	req, err := http.NewRequest("PUT", c.url+path, nil)
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	b, err := json.Marshal(data)
+	if err != nil {
+		return "", err
+	}
+
+	req.Body = io.NopCloser(bytes.NewBuffer(b))
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		return string(respBody), fmt.Errorf("failed do PUT request: %s", resp.Status)
 	}
 
 	return string(respBody), nil

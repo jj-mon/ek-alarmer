@@ -1,4 +1,4 @@
-package configmanager
+package tmpl
 
 var RuleTmpl = `SELECT
 	"{{.ProjectID}}" AS project_id,

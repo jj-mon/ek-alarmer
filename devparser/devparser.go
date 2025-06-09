@@ -29,11 +29,12 @@ func createTresholds(config models.Config) []models.Threshold {
 	for _, device := range config.Devices {
 		for _, source := range device.Sources {
 			treshold := models.Threshold{
-				ID:   fmt.Sprintf("%s.%s", device.Name, source.Name),
-				HiHi: "17000",
-				Hi:   "14000",
-				Lo:   "10000",
-				LoLo: "4000",
+				ProjectID:  "ID-12345",
+				SourceName: fmt.Sprintf("%s_%s", device.Name, source.Name),
+				HiHi:       "17000",
+				Hi:         "14000",
+				Lo:         "10000",
+				LoLo:       "4000",
 			}
 			tresholds = append(tresholds, treshold)
 		}

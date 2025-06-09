@@ -2,9 +2,7 @@ package configurator
 
 import (
 	"encoding/json"
-	"fmt"
 	"kuiper-conf/client"
-	"kuiper-conf/models"
 	"log"
 )
 
@@ -30,29 +28,38 @@ func (c *Configurator) CreateSinkPlugin(name, url string) error {
 	return nil
 }
 
-func (c *Configurator) CreateStream(streamName string, topic string) error {
+func (c *Configurator) CreateSourcePlugin(name, url string) error {
 	data := map[string]string{
-		"sql": fmt.Sprintf("CREATE stream %s () WITH (FORMAT=\"JSON\", DATASOURCE=\"%s\", SHARED=\"true\")", streamName, topic),
+		"name": name,
+		"file": url,
 	}
 
-	resp, err := c.client.DoPOST("/streams", data)
+	_, err := c.client.DoPOST("/plugins/sources", data)
 	if err != nil {
-		log.Printf("error creating stream: %s", resp)
 		return err
 	}
 
 	return nil
 }
 
-func (c *Configurator) CreateLookupAlarmTable(tableName, filePath string) error {
-	// создаем таблицу
-	data := map[string]string{
-		"sql": fmt.Sprintf("CREATE table %s (id string, hihi string, hi string, lo string, lolo string) WITH (FORMAT=\"JSON\", KIND=\"lookup\", DATASOURCE=\"%s\", KEY=\"id\")", tableName, filePath),
+func (c *Configurator) RegisterSrcConfig(config map[string]any) error {
+	resp, err := c.client.DoPUT("/metadata/sources/sql/confKeys/postgresql_config", config)
+	if err != nil {
+		log.Printf("error register source config: %s", resp)
+		return err
 	}
 
-	resp, err := c.client.DoPOST("/tables", data)
+	return nil
+}
+
+func (c *Configurator) CreateRuleset(ruleset string) error {
+	data := map[string]string{
+		"content": string(ruleset),
+	}
+
+	resp, err := c.client.DoPOST("/ruleset/import", data)
 	if err != nil {
-		log.Printf("error creating table: %s", resp)
+		log.Printf("error creating ruleset: %s", resp)
 		return err
 	}
 
@@ -90,16 +97,6 @@ func (c *Configurator) DropStream(id string) error {
 	return nil
 }
 
-func (c *Configurator) CreateRule(rule models.Rule) error {
-	resp, err := c.client.DoPOST("/rules", rule)
-	if err != nil {
-		log.Printf("error creating rule: %s", resp)
-		return err
-	}
-
-	return nil
-}
-
 func (c *Configurator) DeleteAllRules() error {
 	var rules []map[string]any
 
@@ -125,25 +122,6 @@ func (c *Configurator) DeleteAllRules() error {
 func (c *Configurator) DropRule(id string) error {
 	_, err := c.client.DoDELETE("/rules", id)
 	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (c *Configurator) CreateRuleset(ruleset models.Ruleset) error {
-	b, err := json.Marshal(ruleset)
-	if err != nil {
-		return err
-	}
-
-	data := map[string]string{
-		"content": string(b),
-	}
-
-	resp, err := c.client.DoPOST("/ruleset/import", data)
-	if err != nil {
-		log.Printf("error creating ruleset: %s", resp)
 		return err
 	}
 
