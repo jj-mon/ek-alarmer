@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 
 	//импорт драйвера для миграций
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 
 	//импорт драйвера pgx
@@ -15,6 +17,14 @@ import (
 func main() {
 	repo := New()
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	tx, err := repo.Db.Begin(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	for i := range 5000 {
 		t := tag{
 			s:    fmt.Sprintf("opcua_r%d", i+1),
@@ -23,9 +33,14 @@ func main() {
 			hi:   20,
 			hihi: 25,
 		}
-		repo.SaveUser(context.Background(), t)
+		if err := repo.SaveUser(ctx, tx, t); err != nil {
+			log.Println(err)
+		}
 	}
 
+	if err := tx.Commit(ctx); err != nil {
+		log.Fatal(err)
+	}
 }
 
 type tag struct {
@@ -57,8 +72,8 @@ func (r *PostgresRepo) Close() {
 	r.Db.Close()
 }
 
-func (r *PostgresRepo) SaveUser(ctx context.Context, t tag) error {
-	_, err := r.Db.Exec(ctx,
+func (r *PostgresRepo) SaveUser(ctx context.Context, tx pgx.Tx, t tag) error {
+	_, err := tx.Exec(ctx,
 		`INSERT INTO core_data.threshold_table(project_id, source_name, lo, lolo, hi, hihi)
     VALUES ($1, $2, $3, $4, $5, $6)`,
 		"1",
